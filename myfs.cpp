@@ -59,7 +59,7 @@ void MyFs::format()
 	blkdevsim->write(BLOCK_SIZE + sizeof(rootFolderEntry), sizeof(struct myfs_entry), (const char *)&empty_entry);
 
 	// Set the root folder in the start of the drive
-	blkdevsim->write(sizeof(header), sizeof(rootFolder), (const char *)&rootFolder);
+	blkdevsim->write(INODE_TABLE_BLOCKS * BLOCK_SIZE, sizeof(rootFolder), (const char *)&rootFolder);
 
 	// Create structs for the current and root folder entries
 	this->currentDirEntry = new struct myfs_entry(rootFolderEntry);
