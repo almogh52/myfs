@@ -52,6 +52,34 @@ void MyFs::format()
 	this->rootFolderEntry = new struct myfs_entry(rootFolderEntry);
 }
 
+std::vector<struct MyFs::myfs_entry> MyFs::get_dir_entries(MyFs::myfs_entry dir_entry)
+{
+	std::vector<struct MyFs::myfs_entry> entries_vector;
+	struct myfs_entry *entries;
+	struct myfs_dir dir;
+	char *dir_data = new char[dir_entry.size];
+
+	// Get all the dir data
+	get_file(dir_entry, dir_data);
+
+	// Get the dir struct from the dir data
+	dir = *(struct myfs_dir *)dir_data;
+
+	// Set the entries pointer to point at the start of them
+	entries = (struct myfs_entry *)(dir_data + sizeof(struct myfs_dir));
+
+	// Push each entry of the dir into the vector of entries
+	for(int i = 0; i < dir.amount; i++)
+	{
+		entries_vector.push_back(entries[i]);
+	}
+	
+	// Release the memory allocated for the dir data
+	delete dir_data;
+
+	return entries_vector;
+}
+
 struct MyFs::myfs_entry MyFs::get_file_entry(const uint32_t inode)
 {
 	uint32_t amount_of_inodes;
