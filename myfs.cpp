@@ -27,25 +27,36 @@ MyFs::MyFs(BlockDeviceSimulator *blkdevsim_) : blkdevsim(blkdevsim_)
 
 void MyFs::format()
 {
-	uint32_t amount_of_inodes = 1;
 	struct myfs_header header;
+	struct myfs_info sys_info = { 0 };
+
 	struct myfs_entry rootFolderEntry;
 	struct myfs_dir rootFolder = {0};
+
+	struct myfs_entry empty_entry = { 0 };
 
 	// put the header in place
 	strncpy(header.magic, MYFS_MAGIC, sizeof(header.magic));
 	header.version = CURR_VERSION;
 	blkdevsim->write(0, sizeof(header), (const char *)&header);
 
-	// Set the amount of inodes in the last position of the block device
-	blkdevsim->write(BlockDeviceSimulator::DEVICE_SIZE - sizeof(uint32_t), sizeof(uint32_t), (const char *)&amount_of_inodes);
+	// Set the sys info after the header
+	sys_info.inode_count = 1;
+	sys_info.block_bitmap = 0b11111111; // Set all 8 first blocks as taken
+	blkdevsim->write(sizeof(header), sizeof(sys_info), (const char *)&sys_info);
+
+	// Pad the block of the header and the sys info
+	blkdevsim->write(sizeof(header) + sizeof(sys_info), BLOCK_SIZE - sizeof(sys_info) - sizeof(header), std::string(BLOCK_SIZE - sizeof(sys_info) - sizeof(header), 0).c_str());
 
 	// Set the root folder as first entry in the first entry in the inode table
 	rootFolderEntry.inode = 1;
 	rootFolderEntry.address = sizeof(header); // Set it after the header
 	rootFolderEntry.size = sizeof(rootFolder);
 	rootFolderEntry.is_dir = true;
-	blkdevsim->write(BlockDeviceSimulator::DEVICE_SIZE - sizeof(rootFolderEntry) - sizeof(uint32_t), sizeof(rootFolderEntry), (const char *)&rootFolderEntry);
+	blkdevsim->write(BLOCK_SIZE, sizeof(rootFolderEntry), (const char *)&rootFolderEntry);
+
+	// Set empty entry after the first entry for the next file to be created to be set there
+	blkdevsim->write(BLOCK_SIZE + sizeof(rootFolderEntry), sizeof(struct myfs_entry), (const char *)&empty_entry);
 
 	// Set the root folder in the start of the drive
 	blkdevsim->write(sizeof(header), sizeof(rootFolder), (const char *)&rootFolder);
@@ -127,14 +138,10 @@ MyFs::dir_entries MyFs::get_dir_entries(MyFs::myfs_entry dir_entry)
 
 struct MyFs::myfs_entry MyFs::get_file_entry(const uint32_t inode)
 {
-	uint32_t amount_of_inodes;
-	uint32_t entry_address = BlockDeviceSimulator::DEVICE_SIZE - sizeof(uint32_t) - sizeof(struct myfs_entry);
+	uint32_t entry_address = BLOCK_SIZE;
 	struct myfs_entry entry = { 0 };
 
-	// Get the amount of inodes from the end of the block device
-	blkdevsim->read(BlockDeviceSimulator::DEVICE_SIZE - sizeof(uint32_t), sizeof(uint32_t), (char *)&amount_of_inodes);
-
-	for (uint32_t i = 0; i < amount_of_inodes; i++)
+	for (uint32_t i = 0; i < (BLOCK_SIZE * INODE_TABLE_BLOCKS) / sizeof(struct myfs_entry); i++)
 	{
 		// Get the entry from the current entry address
 		blkdevsim->read(entry_address, sizeof(struct myfs_entry), (char *)&entry);
@@ -146,7 +153,7 @@ struct MyFs::myfs_entry MyFs::get_file_entry(const uint32_t inode)
 		}
 
 		// Set the address to point at the next entry
-		entry_address -= sizeof(struct myfs_entry);
+		entry_address += sizeof(struct myfs_entry);
 	}
 
 	return entry;

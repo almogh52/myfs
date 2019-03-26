@@ -3,8 +3,12 @@
 
 #include <memory>
 #include <vector>
+#include <bitset>
 #include <stdint.h>
 #include "blkdev.h"
+
+#define BLOCK_SIZE 4096
+#define INODE_TABLE_BLOCKS 7
 
 class MyFs
 {
@@ -114,6 +118,12 @@ class MyFs
 	{
 		char magic[4];
 		uint8_t version;
+	};
+
+	struct myfs_info
+	{
+		uint32_t inode_count;
+		std::bitset<DEVICE_SIZE / BLOCK_SIZE> block_bitmap;
 	};
 
 	BlockDeviceSimulator *blkdevsim;

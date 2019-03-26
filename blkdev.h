@@ -3,6 +3,8 @@
 
 #include <string>
 
+#define DEVICE_SIZE (1024 * 1024)
+
 class BlockDeviceSimulator {
 public:
 	BlockDeviceSimulator(std::string fname);
@@ -10,8 +12,6 @@ public:
 
 	void read(int addr, int size, char *ans);
 	void write(int addr, int size, const char *data);
-
-	static const int DEVICE_SIZE = 1024 * 1024;
 
 private:
 	int fd;
