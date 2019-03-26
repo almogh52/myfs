@@ -313,6 +313,28 @@ void MyFs::update_file(struct MyFs::myfs_entry *file_entry, char *data, uint32_t
 	blkdevsim->write(sizeof(struct myfs_header), sizeof(sys_info), (const char *)&sys_info);
 }
 
+void MyFs::add_dir_entry(struct MyFs::myfs_entry *dir, struct MyFs::myfs_entry *file_entry, std::string file_name)
+{
+	struct myfs_dir_entry file_dir_entry = {0};
+	char *new_dir_data = new char[dir->size + sizeof(struct myfs_dir_entry)];
+
+	// If a file with the file name already exists throw error
+	if (Utils::SearchFile(file_name, get_dir_entries(*dir)).inode != 0)
+	{
+		throw MyFsException("File with the name " + file_name + " already exists!");
+	}
+
+	// Set the dir entry properties
+	file_dir_entry.inode = file_entry->inode;
+	strcpy(file_dir_entry.name, file_name.c_str());
+
+	// Read the existing dir data into the new dir data array
+	get_file(*dir, new_dir_data);
+
+	// Update the dir file
+	update_file(dir, new_dir_data, dir->size + sizeof(struct myfs_dir_entry));
+}
+
 struct MyFs::myfs_entry MyFs::allocate_file(bool is_dir)
 {
 	struct myfs_entry file_entry = {0};
@@ -335,6 +357,9 @@ void MyFs::create_file(std::string path, std::string file_name)
 
 	// Allocate the file
 	file = allocate_file(false);
+
+	// Add a dir entry for the file in the dir file
+	add_dir_entry(&dir, &file, file_name);
 }
 
 void MyFs::create_file(std::string path_str, bool directory)
