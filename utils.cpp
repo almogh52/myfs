@@ -33,3 +33,8 @@ MyFs::myfs_dir_entry Utils::SearchFile(std::string &file_name, MyFs::dir_entries
     // Return an empty dir entry if not found
     return { 0 };
 }
+
+int Utils::CalcAmountOfBlocksForFile(uint32_t size)
+{
+    return int(size / BLOCK_DATA_SIZE) + (size % BLOCK_DATA_SIZE == 0 ? 0 : 1);
+}
