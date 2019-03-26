@@ -6,22 +6,6 @@
 
 const char *MyFs::MYFS_MAGIC = "MYFS";
 
-std::vector<std::string> split(const std::string &s, char delimiter)
-{
-    std::vector<std::string> tokens;
-    std::string token;
-    std::istringstream token_stream(s);
-
-    // While the string hasn't ended, get a "line" from it ending with the delimeter
-    while (std::getline(token_stream, token, delimiter))
-    {
-        // Save "line"/token in tokens vector
-        tokens.push_back(token);
-    }
-
-    return tokens;
-}
-
 MyFs::MyFs(BlockDeviceSimulator *blkdevsim_):blkdevsim(blkdevsim_) {
 	struct myfs_header header;
 	blkdevsim->read(0, sizeof(header), (char *)&header);
