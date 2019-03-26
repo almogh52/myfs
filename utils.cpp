@@ -17,3 +17,19 @@ std::vector<std::string> Utils::Split(const std::string &s, char delimiter)
 
     return tokens;
 }
+
+MyFs::myfs_dir_entry Utils::SearchFile(std::string &file_name, MyFs::dir_entries entries)
+{
+    // Go through the entries
+    for (struct MyFs::myfs_dir_entry entry : entries)
+    {
+        // Check if the entry's name matches the file name
+        if (std::string(entry.name) == file_name)
+        {
+            return entry;
+        }
+    }
+
+    // Return an empty dir entry if not found
+    return { 0 };
+}
