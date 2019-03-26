@@ -52,6 +52,33 @@ void MyFs::format()
 	this->currentDirEntry = new struct myfs_entry(rootFolderEntry);
 }
 
+struct MyFs::myfs_entry MyFs::get_file_entry(const uint32_t inode)
+{
+	uint32_t amount_of_inodes;
+	uint32_t entry_address = BlockDeviceSimulator::DEVICE_SIZE - sizeof(uint32_t) - sizeof(struct myfs_entry);
+	struct myfs_entry entry = { 0 };
+
+	// Get the amount of inodes from the end of the block device
+	blkdevsim->read(BlockDeviceSimulator::DEVICE_SIZE - sizeof(uint32_t), sizeof(uint32_t), (char *)&amount_of_inodes);
+
+	for (uint32_t i = 0; i < amount_of_inodes; i++)
+	{
+		// Get the entry from the current entry address
+		blkdevsim->read(entry_address, sizeof(struct myfs_entry), (char *)&entry);
+
+		// If the inode matches the inode of the requested file, return the entry
+		if (entry.inode == inode)
+		{
+			return entry;
+		}
+
+		// Set the address to point at the next entry
+		entry_address -= sizeof(struct myfs_entry);
+	}
+
+	return entry;
+}
+
 void MyFs::create_file(std::string path_str, bool directory)
 {
 	throw std::runtime_error("not implemented");

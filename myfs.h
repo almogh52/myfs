@@ -6,8 +6,9 @@
 #include <stdint.h>
 #include "blkdev.h"
 
-class MyFs {
-public:
+class MyFs
+{
+  public:
 	MyFs(BlockDeviceSimulator *blkdevsim_);
 
 	/**
@@ -15,7 +16,8 @@ public:
 	 * This struct is used by list_dir method to return directory entry
 	 * information.
 	 */
-	struct dir_list_entry {
+	struct dir_list_entry
+	{
 		/**
 		 * The directory entry name
 		 */
@@ -79,8 +81,7 @@ public:
 	 */
 	dir_list list_dir(std::string path_str);
 
-private:
-
+  private:
 	/**
 	 * This struct represents the first bytes of a myfs filesystem.
 	 * It holds some magic characters and a number indicating the version.
@@ -89,22 +90,26 @@ private:
 	 * instance. Otherwise, the blockdevice is formated and a new instance is
 	 * created.
 	 */
-	struct myfs_header {
+	struct myfs_header
+	{
 		char magic[4];
 		uint8_t version;
 	};
 
-	struct myfs_entry {
+	struct myfs_entry
+	{
 		uint32_t inode;
 		uint32_t address;
 		uint32_t size;
 	};
 
-	struct myfs_dir {
+	struct myfs_dir
+	{
 		uint32_t amount;
 	};
 
-	struct myfs_dir_entry {
+	struct myfs_dir_entry
+	{
 		uint32_t inode;
 		char name[10];
 	};
@@ -116,6 +121,8 @@ private:
 
 	static const uint8_t CURR_VERSION = 0x03;
 	static const char *MYFS_MAGIC;
+
+	struct myfs_entry get_file_entry(const uint32_t inode);
 };
 
 #endif // __MYFS_H__
