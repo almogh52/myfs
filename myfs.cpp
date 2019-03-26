@@ -47,9 +47,9 @@ void MyFs::format()
 	// Set the root folder in the start of the drive
 	blkdevsim->write(sizeof(header), sizeof(rootFolder), (const char *)&rootFolder);
 
-	// Set the current dir as the root folder
-	this->currentDir = new struct myfs_dir(rootFolder);
+	// Create structs for the current and root folder entries
 	this->currentDirEntry = new struct myfs_entry(rootFolderEntry);
+	this->rootFolderEntry = new struct myfs_entry(rootFolderEntry);
 }
 
 struct MyFs::myfs_entry MyFs::get_file_entry(const uint32_t inode)

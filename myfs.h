@@ -116,8 +116,8 @@ class MyFs
 
 	BlockDeviceSimulator *blkdevsim;
 
-	struct myfs_dir *currentDir;
 	struct myfs_entry *currentDirEntry;
+	struct myfs_entry *rootFolderEntry;
 
 	static const uint8_t CURR_VERSION = 0x03;
 	static const char *MYFS_MAGIC;
