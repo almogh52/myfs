@@ -35,6 +35,9 @@ void MyFs::format()
 
 	struct myfs_entry empty_entry = {0};
 
+	// Fill all 8 first blocks with 0
+	blkdevsim->write(0, (1 + INODE_TABLE_BLOCKS) * BLOCK_SIZE, std::string((1 + INODE_TABLE_BLOCKS) * BLOCK_SIZE, 0).c_str());
+
 	// put the header in place
 	strncpy(header.magic, MYFS_MAGIC, sizeof(header.magic));
 	header.version = CURR_VERSION;
@@ -44,9 +47,6 @@ void MyFs::format()
 	sys_info.inode_count = 1;
 	sys_info.block_bitmap = 0b111111111; // Set all 9 first blocks as taken
 	blkdevsim->write(sizeof(header), sizeof(sys_info), (const char *)&sys_info);
-
-	// Pad the block of the header and the sys info
-	blkdevsim->write(sizeof(header) + sizeof(sys_info), BLOCK_SIZE - sizeof(sys_info) - sizeof(header), std::string(BLOCK_SIZE - sizeof(sys_info) - sizeof(header), 0).c_str());
 
 	// Set the root folder as first entry in the first entry in the inode table
 	rootFolderEntry.inode = 1;
