@@ -79,15 +79,10 @@ struct MyFs::myfs_entry MyFs::get_file_entry(const uint32_t inode)
 	return entry;
 }
 
-char *MyFs::get_file(const uint32_t address, const uint32_t size)
+void MyFs::get_file(const myfs_entry file_entry, char *file_data)
 {
-	// Allocate memory for the file
-	char *data = new char[size];
-
 	// Read the file from the block device
-	blkdevsim->read(address, size, data);
-
-	return data;
+	blkdevsim->read(file_entry.address, file_entry.size, file_data);
 }
 
 void MyFs::create_file(std::string path_str, bool directory)
