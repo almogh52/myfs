@@ -43,6 +43,8 @@ void MyFs::format()
 	// Set the root folder as first entry in the first entry in the inode table
 	rootFolderEntry.inode = 1;
 	rootFolderEntry.address = sizeof(header); // Set it after the header
+	rootFolderEntry.size = sizeof(rootFolder);
+	rootFolderEntry.is_dir = true;
 	blkdevsim->write(BlockDeviceSimulator::DEVICE_SIZE - sizeof(rootFolderEntry) - sizeof(uint32_t), sizeof(rootFolderEntry), (const char *)&rootFolderEntry);
 
 	// Set the root folder in the start of the drive

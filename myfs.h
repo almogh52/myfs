@@ -40,6 +40,7 @@ class MyFs
 		uint32_t inode;
 		uint32_t address;
 		uint32_t size;
+		bool is_dir;
 	};
 
 	struct myfs_dir
