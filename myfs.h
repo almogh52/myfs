@@ -123,6 +123,7 @@ class MyFs
 	static const char *MYFS_MAGIC;
 
 	struct myfs_entry get_file_entry(const uint32_t inode);
+	char *get_file(const uint32_t address, const uint32_t size);
 };
 
 #endif // __MYFS_H__
