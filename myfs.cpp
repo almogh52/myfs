@@ -52,6 +52,48 @@ void MyFs::format()
 	this->rootFolderEntry = new struct myfs_entry(rootFolderEntry);
 }
 
+struct MyFs::myfs_entry MyFs::get_dir(const std::string &path_str)
+{
+	struct myfs_entry dir;
+	struct myfs_dir_entry dir_entry;
+
+	// Get all dirs names
+	std::vector<std::string> dirs = Utils::Split(path_str, '/');
+	dir_entries entries;
+
+	// If the first dir of the path is the root folder set the dir as the entry of the first folder
+	if (dirs[0].length() == 0)
+	{
+		dir = *rootFolderEntry;
+
+		// Remove the first dir from the dirs list
+		dirs.erase(dirs.begin());
+	}
+
+	// Go through the dir names in the dirs vector
+	for (std::string& dir_name : dirs)
+	{
+		// Get the dir entries of the current dir
+		entries = get_dir_entries(dir);
+
+		// Try to find the dir as a file in the current dir
+		dir_entry = Utils::SearchFile(dir_name, entries);
+		if (dir_entry.inode == 0)
+		{
+			throw std::runtime_error("Unable to find the wanted dir!");
+		}
+
+		// Try to get the entry of the dir
+		dir = get_file_entry(dir_entry.inode);
+		if (dir.inode == 0)
+		{
+			throw std::runtime_error("An error occurred while searching the dir's entry!");
+		}
+	}
+
+	return dir;
+}
+
 MyFs::dir_entries MyFs::get_dir_entries(MyFs::myfs_entry dir_entry)
 {
 	dir_entries entries_vector;
