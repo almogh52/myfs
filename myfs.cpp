@@ -6,6 +6,7 @@
 #include <sstream>
 
 #include "utils.h"
+#include "myfs_exception.h"
 
 const char *MyFs::MYFS_MAGIC = "MYFS";
 
@@ -80,14 +81,14 @@ struct MyFs::myfs_entry MyFs::get_dir(const std::string &path_str)
 		dir_entry = Utils::SearchFile(dir_name, entries);
 		if (dir_entry.inode == 0)
 		{
-			throw std::runtime_error("Unable to find the wanted dir!");
+			throw MyFsException("Unable to find the dir '" + dir_name + "'!");
 		}
 
 		// Try to get the entry of the dir
 		dir = get_file_entry(dir_entry.inode);
 		if (dir.inode == 0)
 		{
-			throw std::runtime_error("An error occurred while searching the dir's entry!");
+			throw MyFsException("An error occurred while searching the dir's entry!");
 		}
 	}
 
@@ -157,23 +158,23 @@ void MyFs::get_file(const myfs_entry file_entry, char *file_data)
 
 void MyFs::create_file(std::string path_str, bool directory)
 {
-	throw std::runtime_error("not implemented");
+	throw MyFsException("not implemented");
 }
 
 std::string MyFs::get_content(std::string path_str)
 {
-	throw std::runtime_error("not implemented");
+	throw MyFsException("not implemented");
 	return "";
 }
 
 void MyFs::set_content(std::string path_str, std::string content)
 {
-	throw std::runtime_error("not implemented");
+	throw MyFsException("not implemented");
 }
 
 MyFs::dir_list MyFs::list_dir(std::string path_str)
 {
 	dir_list ans;
-	throw std::runtime_error("not implemented");
+	throw MyFsException("not implemented");
 	return ans;
 }
