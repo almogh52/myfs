@@ -177,6 +177,31 @@ void MyFs::get_file(const myfs_entry file_entry, char *file_data)
 	} while (block.next_block);
 }
 
+uint32_t MyFs::allocate_block(struct MyFs::myfs_block* block, struct MyFs::myfs_info *sys_info)
+{
+	uint32_t block_index = 1 + INODE_TABLE_BLOCKS;
+
+	// While the block is allocated, continue to the next block
+	while (block_index < sys_info->block_bitmap.size() && sys_info->block_bitmap.test(block_index))
+	{
+		block_index++;
+	}
+
+	// If can't find an empty block, send error
+	if (block_index == sys_info->block_bitmap.size())
+	{
+		throw MyFsException("Hard drive full!");
+	}
+
+	// Allocate the block in the block's bitmap
+	sys_info->block_bitmap.set(block_index);
+
+	// Write the block struct to the newly allocated block
+	blkdevsim->write(block_index * BLOCK_SIZE, BLOCK_SIZE, (const char *)block);
+
+	return block_index;
+}
+
 void MyFs::create_file(std::string path_str, bool directory)
 {
 	throw MyFsException("not implemented");
