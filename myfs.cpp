@@ -52,10 +52,10 @@ void MyFs::format()
 	this->rootFolderEntry = new struct myfs_entry(rootFolderEntry);
 }
 
-std::vector<struct MyFs::myfs_entry> MyFs::get_dir_entries(MyFs::myfs_entry dir_entry)
+std::vector<struct MyFs::myfs_dir_entry> MyFs::get_dir_entries(MyFs::myfs_entry dir_entry)
 {
-	std::vector<struct MyFs::myfs_entry> entries_vector;
-	struct myfs_entry *entries;
+	std::vector<struct MyFs::myfs_dir_entry> entries_vector;
+	struct myfs_dir_entry *entries;
 	struct myfs_dir dir;
 	char *dir_data = new char[dir_entry.size];
 
@@ -66,7 +66,7 @@ std::vector<struct MyFs::myfs_entry> MyFs::get_dir_entries(MyFs::myfs_entry dir_
 	dir = *(struct myfs_dir *)dir_data;
 
 	// Set the entries pointer to point at the start of them
-	entries = (struct myfs_entry *)(dir_data + sizeof(struct myfs_dir));
+	entries = (struct myfs_dir_entry *)(dir_data + sizeof(struct myfs_dir));
 
 	// Push each entry of the dir into the vector of entries
 	for(int i = 0; i < dir.amount; i++)
@@ -75,7 +75,7 @@ std::vector<struct MyFs::myfs_entry> MyFs::get_dir_entries(MyFs::myfs_entry dir_
 	}
 	
 	// Release the memory allocated for the dir data
-	delete dir_data;
+	delete[] dir_data;
 
 	return entries_vector;
 }
