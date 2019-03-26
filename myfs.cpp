@@ -42,7 +42,7 @@ void MyFs::format()
 
 	// Set the sys info after the header
 	sys_info.inode_count = 1;
-	sys_info.block_bitmap = 0b11111111; // Set all 8 first blocks as taken
+	sys_info.block_bitmap = 0b111111111; // Set all 9 first blocks as taken
 	blkdevsim->write(sizeof(header), sizeof(sys_info), (const char *)&sys_info);
 
 	// Pad the block of the header and the sys info
@@ -50,7 +50,7 @@ void MyFs::format()
 
 	// Set the root folder as first entry in the first entry in the inode table
 	rootFolderEntry.inode = 1;
-	rootFolderEntry.address = sizeof(header); // Set it after the header
+	rootFolderEntry.first_block = 8;
 	rootFolderEntry.size = sizeof(rootFolder);
 	rootFolderEntry.is_dir = true;
 	blkdevsim->write(BLOCK_SIZE, sizeof(rootFolderEntry), (const char *)&rootFolderEntry);
@@ -161,8 +161,20 @@ struct MyFs::myfs_entry MyFs::get_file_entry(const uint32_t inode)
 
 void MyFs::get_file(const myfs_entry file_entry, char *file_data)
 {
-	// Read the file from the block device
-	blkdevsim->read(file_entry.address, file_entry.size, file_data);
+	uint32_t file_pointer = 0;
+	struct myfs_block block;
+
+	// Set the next block to be taken as the first block of the file
+	block.next_block = file_entry.first_block;
+
+	// While there is a next block, keep on getting the blocks
+	do {
+		// Read the block
+		blkdevsim->read(block.next_block * BLOCK_SIZE, BLOCK_SIZE, (char *)&block);
+
+		// Copy the data from the block into the file data 
+		memcpy(file_data + file_pointer, block.data, (file_entry.size - file_pointer) % BLOCK_DATA_SIZE);
+	} while (block.next_block);
 }
 
 void MyFs::create_file(std::string path_str, bool directory)

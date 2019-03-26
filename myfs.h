@@ -8,6 +8,8 @@
 #include "blkdev.h"
 
 #define BLOCK_SIZE 4096
+#define BLOCK_DATA_SIZE BLOCK_SIZE - sizeof(uint32_t)
+
 #define INODE_TABLE_BLOCKS 7
 
 class MyFs
@@ -42,7 +44,7 @@ class MyFs
 	struct myfs_entry
 	{
 		uint32_t inode;
-		uint32_t address;
+		uint32_t first_block;
 		uint32_t size;
 		bool is_dir;
 	};
@@ -124,6 +126,12 @@ class MyFs
 	{
 		uint32_t inode_count;
 		std::bitset<DEVICE_SIZE / BLOCK_SIZE> block_bitmap;
+	};
+
+	struct myfs_block
+	{
+		char data[BLOCK_DATA_SIZE];
+		uint32_t next_block;
 	};
 
 	BlockDeviceSimulator *blkdevsim;
