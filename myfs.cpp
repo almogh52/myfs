@@ -203,7 +203,7 @@ uint32_t MyFs::allocate_block(struct MyFs::myfs_block *block, struct MyFs::myfs_
 	return block_index;
 }
 
-void MyFs::add_entry(struct MyFs::myfs_entry *new_entry)
+void MyFs::add_entry(struct MyFs::myfs_entry *file_entry)
 {
 	struct myfs_entry entry = {0};
 	uint32_t entry_table_pointer = BLOCK_SIZE;
@@ -225,21 +225,45 @@ void MyFs::add_entry(struct MyFs::myfs_entry *new_entry)
 	}
 
 	// Write the new entry
-	blkdevsim->write(entry_table_pointer, sizeof(struct myfs_entry), (const char *)new_entry);
+	blkdevsim->write(entry_table_pointer, sizeof(struct myfs_entry), (const char *)file_entry);
 }
 
-struct MyFs::myfs_entry MyFs::allocate_file(char *data, uint32_t size, bool is_dir)
+void MyFs::update_entry(struct MyFs::myfs_entry *file_entry)
+{
+	struct myfs_entry entry = {0};
+	uint32_t entry_table_pointer = BLOCK_SIZE;
+
+	// While we didn't find the entry in the table
+	do
+	{
+		// Read the entry from the entries table
+		blkdevsim->read(entry_table_pointer, sizeof(entry), (char *)&entry);
+
+		// Point to the next entry
+		entry_table_pointer += sizeof(entry);
+	} while (entry.inode != file_entry->inode && (entry_table_pointer + sizeof(entry)) < (1 + INODE_TABLE_BLOCKS) * BLOCK_SIZE);
+
+	// If the entry wasn't found, throw error
+	if (entry.inode != file_entry->inode)
+	{
+		throw MyFsException("Inode entry wasn't found!");
+	}
+
+	// Write the new entry
+	blkdevsim->write(entry_table_pointer, sizeof(struct myfs_entry), (const char *)file_entry);
+}
+
+void MyFs::update_file(struct MyFs::myfs_entry *file_entry, char *data, uint32_t size)
 {
 	uint32_t data_pointer = size - size % BLOCK_DATA_SIZE, block_index = 0;
 	struct myfs_info sys_info = {0};
-	struct myfs_entry file_entry = {0};
 	struct myfs_block block = {0};
 
 	// Get the file system info struct
 	blkdevsim->read(sizeof(myfs_header), sizeof(sys_info), (char *)&sys_info);
 
-	// If the file isn't empty
-	if (size != 0)
+	// If the file isn't allocated yet, allocate it
+	if (file_entry->first_block == 0 && size != 0)
 	{
 		// While we didn't reach the end of the data (backwards addition of the file)
 		while (data_pointer)
@@ -248,7 +272,7 @@ struct MyFs::myfs_entry MyFs::allocate_file(char *data, uint32_t size, bool is_d
 			block.next_block = block_index;
 
 			// Copy the current block's data to the block's struct
-			memcpy(block.data, data + data_pointer, BLOCK_DATA_SIZE);
+			memcpy(block.data, data + data_pointer, (size - data_pointer) % BLOCK_DATA_SIZE);
 
 			// Allocate the block and get it's position
 			block_index = allocate_block(&block, &sys_info);
@@ -258,18 +282,25 @@ struct MyFs::myfs_entry MyFs::allocate_file(char *data, uint32_t size, bool is_d
 		}
 
 		// Set the first block as we received from the loop
-		file_entry.first_block = block_index;
+		file_entry->first_block = block_index;
 	}
 
+	// Update the file entry in the inode entries table
+	update_entry(file_entry);
+
+	// Overwrite the file system info structure
+	blkdevsim->write(sizeof(struct myfs_header), sizeof(sys_info), (const char *)&sys_info);
+}
+
+struct MyFs::myfs_entry MyFs::allocate_file(bool is_dir)
+{
+	struct myfs_entry file_entry = {0};
+
 	// Set file's properties
-	file_entry.size = size;
 	file_entry.is_dir = is_dir;
 
 	// Add the entry to inode table
 	add_entry(&file_entry);
-
-	// Overwrite the file system info structure
-	blkdevsim->write(sizeof(struct myfs_header), sizeof(sys_info), (const char *)&sys_info);
 
 	return file_entry;
 }

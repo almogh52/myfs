@@ -142,8 +142,10 @@ class MyFs
 	static const uint8_t CURR_VERSION = 0x03;
 	static const char *MYFS_MAGIC;
 
-	void add_entry(struct myfs_entry *entry);
-	struct myfs_entry allocate_file(char *data, uint32_t size, bool is_dir);
+	void update_entry(struct myfs_entry *file_entry);
+	void add_entry(struct myfs_entry *file_entry);
+	void update_file(struct myfs_entry *file_entry, char *data, uint32_t size);
+	struct myfs_entry allocate_file(bool is_dir);
 	uint32_t allocate_block(struct myfs_block* block, struct myfs_info *sys_info);
 	struct myfs_entry get_dir(const std::string &path_str);
 	dir_entries get_dir_entries(myfs_entry dir_entry);
