@@ -278,11 +278,32 @@ void MyFs::update_file(struct MyFs::myfs_entry *file_entry, char *data, uint32_t
 			block_index = allocate_block(&block, &sys_info);
 
 			// Go to the next block
-			data_pointer -= BLOCK_SIZE;
+			data_pointer -= BLOCK_DATA_SIZE;
 		}
 
 		// Set the first block as we received from the loop
 		file_entry->first_block = block_index;
+	}
+	// If the file has blocks on memory and has changed, rewrite all the blocks
+	else if (file_entry->first_block != 0 && size != 0)
+	{
+		block.next_block = file_entry->first_block;
+
+		// While we didn't reach the end of our existing block chain
+		while (data_pointer < size && data_pointer < Utils::CalcAmountOfBlocksForFile(file_entry->size) * BLOCK_DATA_SIZE)
+		{
+			// Get the next block of the file
+			blkdevsim->read(block.next_block * BLOCK_SIZE, BLOCK_SIZE, (char *)&block);
+
+			// Copy the current block's data to the block's struct
+			memcpy(block.data, data + data_pointer, (size - data_pointer) % BLOCK_DATA_SIZE);
+
+			// Overwrite the block
+			blkdevsim->write(block.next_block * BLOCK_SIZE, BLOCK_SIZE, (const char *)&block);
+
+			// Go to the next block
+			data_pointer += BLOCK_DATA_SIZE;
+		}
 	}
 
 	// Update the file entry in the inode entries table
