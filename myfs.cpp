@@ -305,6 +305,17 @@ struct MyFs::myfs_entry MyFs::allocate_file(bool is_dir)
 	return file_entry;
 }
 
+void MyFs::create_file(std::string path, std::string file_name)
+{
+	struct myfs_entry dir, file;
+
+	// Get the dir from the path
+	dir = get_dir(path);
+
+	// Allocate the file
+	file = allocate_file(false);
+}
+
 void MyFs::create_file(std::string path_str, bool directory)
 {
 	throw MyFsException("not implemented");

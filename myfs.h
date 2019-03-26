@@ -142,6 +142,7 @@ class MyFs
 	static const uint8_t CURR_VERSION = 0x03;
 	static const char *MYFS_MAGIC;
 
+	void create_file(std::string path, std::string file_name);
 	void update_entry(struct myfs_entry *file_entry);
 	void add_entry(struct myfs_entry *file_entry);
 	void update_file(struct myfs_entry *file_entry, char *data, uint32_t size);
