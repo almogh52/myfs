@@ -364,7 +364,16 @@ void MyFs::create_file(std::string path, std::string file_name)
 
 void MyFs::create_file(std::string path_str, bool directory)
 {
-	throw MyFsException("not implemented");
+	std::vector<std::string> tokens;
+
+	if (!directory)
+	{
+		tokens = Utils::Split(path_str, '/');
+
+		path_str = path_str.substr(0, path_str.size() - tokens.back().length());
+
+		create_file(path_str, tokens.back());
+	}
 }
 
 std::string MyFs::get_content(std::string path_str)
