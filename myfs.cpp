@@ -26,6 +26,7 @@ MyFs::MyFs(BlockDeviceSimulator *blkdevsim_) : blkdevsim(blkdevsim_)
 
 void MyFs::format()
 {
+	uint32_t amount_of_inodes = 1;
 	struct myfs_header header;
 	struct myfs_entry rootFolderEntry;
 	struct myfs_dir rootFolder = {0};
@@ -35,10 +36,13 @@ void MyFs::format()
 	header.version = CURR_VERSION;
 	blkdevsim->write(0, sizeof(header), (const char *)&header);
 
+	// Set the amount of inodes in the last position of the block device
+	blkdevsim->write(BlockDeviceSimulator::DEVICE_SIZE - sizeof(uint32_t), sizeof(uint32_t), (const char *)&amount_of_inodes);
+
 	// Set the root folder as first entry in the first entry in the inode table
 	rootFolderEntry.inode = 1;
 	rootFolderEntry.address = sizeof(header); // Set it after the header
-	blkdevsim->write(BlockDeviceSimulator::DEVICE_SIZE - sizeof(rootFolderEntry), sizeof(rootFolderEntry), (const char *)&rootFolderEntry);
+	blkdevsim->write(BlockDeviceSimulator::DEVICE_SIZE - sizeof(rootFolderEntry) - sizeof(uint32_t), sizeof(rootFolderEntry), (const char *)&rootFolderEntry);
 
 	// Set the root folder in the start of the drive
 	blkdevsim->write(sizeof(header), sizeof(rootFolder), (const char *)&rootFolder);
@@ -47,21 +51,6 @@ void MyFs::format()
 	this->currentDir = new struct myfs_dir(rootFolder);
 	this->currentDirEntry = new struct myfs_entry(rootFolderEntry);
 }
-
-/*struct MyFs::myfs_entry MyFs::get_dir(const std::string &path_str)
-{
-	struct myfs_entry dir;
-
-	// Get all dirs names
-	std::vector<std::string> dirs = Utils::Split(path_str, '/');
-
-	for (std::string &idk : dirs)
-	{
-		std::cout << idk << std::endl;
-	}
-
-	return dir;
-}*/
 
 void MyFs::create_file(std::string path_str, bool directory)
 {
