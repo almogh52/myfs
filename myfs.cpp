@@ -52,9 +52,9 @@ void MyFs::format()
 	this->rootFolderEntry = new struct myfs_entry(rootFolderEntry);
 }
 
-std::vector<struct MyFs::myfs_dir_entry> MyFs::get_dir_entries(MyFs::myfs_entry dir_entry)
+MyFs::dir_entries MyFs::get_dir_entries(MyFs::myfs_entry dir_entry)
 {
-	std::vector<struct MyFs::myfs_dir_entry> entries_vector;
+	dir_entries entries_vector;
 	struct myfs_dir_entry *entries;
 	struct myfs_dir dir;
 	char *dir_data = new char[dir_entry.size];

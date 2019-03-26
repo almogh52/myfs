@@ -35,6 +35,25 @@ class MyFs
 	};
 	typedef std::vector<struct dir_list_entry> dir_list;
 
+	struct myfs_entry
+	{
+		uint32_t inode;
+		uint32_t address;
+		uint32_t size;
+	};
+
+	struct myfs_dir
+	{
+		uint32_t amount;
+	};
+
+	struct myfs_dir_entry
+	{
+		uint32_t inode;
+		char name[10];
+	};
+	typedef std::vector<struct myfs_dir_entry> dir_entries;
+
 	/**
 	 * format method
 	 * This function discards the current content in the blockdevice and
@@ -96,24 +115,6 @@ class MyFs
 		uint8_t version;
 	};
 
-	struct myfs_entry
-	{
-		uint32_t inode;
-		uint32_t address;
-		uint32_t size;
-	};
-
-	struct myfs_dir
-	{
-		uint32_t amount;
-	};
-
-	struct myfs_dir_entry
-	{
-		uint32_t inode;
-		char name[10];
-	};
-
 	BlockDeviceSimulator *blkdevsim;
 
 	struct myfs_entry *currentDirEntry;
@@ -121,8 +122,8 @@ class MyFs
 
 	static const uint8_t CURR_VERSION = 0x03;
 	static const char *MYFS_MAGIC;
-
-	std::vector<struct MyFs::myfs_dir_entry> get_dir_entries(myfs_entry dir_entry);
+	
+	dir_entries get_dir_entries(myfs_entry dir_entry);
 	struct myfs_entry get_file_entry(const uint32_t inode);
 	void get_file(const myfs_entry file_entry, char *file_data);
 };
