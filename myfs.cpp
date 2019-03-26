@@ -28,12 +28,12 @@ MyFs::MyFs(BlockDeviceSimulator *blkdevsim_) : blkdevsim(blkdevsim_)
 void MyFs::format()
 {
 	struct myfs_header header;
-	struct myfs_info sys_info = { 0 };
+	struct myfs_info sys_info = {0};
 
 	struct myfs_entry rootFolderEntry;
 	struct myfs_dir rootFolder = {0};
 
-	struct myfs_entry empty_entry = { 0 };
+	struct myfs_entry empty_entry = {0};
 
 	// put the header in place
 	strncpy(header.magic, MYFS_MAGIC, sizeof(header.magic));
@@ -85,7 +85,7 @@ struct MyFs::myfs_entry MyFs::get_dir(const std::string &path_str)
 	}
 
 	// Go through the dir names in the dirs vector
-	for (std::string& dir_name : dirs)
+	for (std::string &dir_name : dirs)
 	{
 		// Get the dir entries of the current dir
 		entries = get_dir_entries(dir);
@@ -125,11 +125,11 @@ MyFs::dir_entries MyFs::get_dir_entries(MyFs::myfs_entry dir_entry)
 	entries = (struct myfs_dir_entry *)(dir_data + sizeof(struct myfs_dir));
 
 	// Push each entry of the dir into the vector of entries
-	for(int i = 0; i < dir.amount; i++)
+	for (int i = 0; i < dir.amount; i++)
 	{
 		entries_vector.push_back(entries[i]);
 	}
-	
+
 	// Release the memory allocated for the dir data
 	delete[] dir_data;
 
@@ -139,7 +139,7 @@ MyFs::dir_entries MyFs::get_dir_entries(MyFs::myfs_entry dir_entry)
 struct MyFs::myfs_entry MyFs::get_file_entry(const uint32_t inode)
 {
 	uint32_t entry_address = BLOCK_SIZE;
-	struct myfs_entry entry = { 0 };
+	struct myfs_entry entry = {0};
 
 	for (uint32_t i = 0; i < (BLOCK_SIZE * INODE_TABLE_BLOCKS) / sizeof(struct myfs_entry); i++)
 	{
@@ -168,16 +168,17 @@ void MyFs::get_file(const myfs_entry file_entry, char *file_data)
 	block.next_block = file_entry.first_block;
 
 	// While there is a next block, keep on getting the blocks
-	do {
+	do
+	{
 		// Read the block
 		blkdevsim->read(block.next_block * BLOCK_SIZE, BLOCK_SIZE, (char *)&block);
 
-		// Copy the data from the block into the file data 
+		// Copy the data from the block into the file data
 		memcpy(file_data + file_pointer, block.data, (file_entry.size - file_pointer) % BLOCK_DATA_SIZE);
 	} while (block.next_block);
 }
 
-uint32_t MyFs::allocate_block(struct MyFs::myfs_block* block, struct MyFs::myfs_info *sys_info)
+uint32_t MyFs::allocate_block(struct MyFs::myfs_block *block, struct MyFs::myfs_info *sys_info)
 {
 	uint32_t block_index = 1 + INODE_TABLE_BLOCKS;
 
@@ -204,11 +205,12 @@ uint32_t MyFs::allocate_block(struct MyFs::myfs_block* block, struct MyFs::myfs_
 
 void MyFs::add_entry(struct MyFs::myfs_entry *new_entry)
 {
-	struct myfs_entry entry = { 0 };
+	struct myfs_entry entry = {0};
 	uint32_t entry_table_pointer = BLOCK_SIZE;
 
 	// While we didn't find an empty entry
-	do {
+	do
+	{
 		// Read the entry from the entries table
 		blkdevsim->read(entry_table_pointer, sizeof(entry), (char *)&entry);
 
@@ -229,9 +231,9 @@ void MyFs::add_entry(struct MyFs::myfs_entry *new_entry)
 struct MyFs::myfs_entry MyFs::allocate_file(char *data, uint32_t size, bool is_dir)
 {
 	uint32_t data_pointer = size - size % BLOCK_DATA_SIZE, block_index = 0;
-	struct myfs_info sys_info = { 0 };
-	struct myfs_entry file_entry = { 0 };
-	struct myfs_block block = { 0 };
+	struct myfs_info sys_info = {0};
+	struct myfs_entry file_entry = {0};
+	struct myfs_block block = {0};
 
 	// Get the file system info struct
 	blkdevsim->read(sizeof(myfs_header), sizeof(sys_info), (char *)&sys_info);
@@ -265,6 +267,9 @@ struct MyFs::myfs_entry MyFs::allocate_file(char *data, uint32_t size, bool is_d
 
 	// Add the entry to inode table
 	add_entry(&file_entry);
+
+	// Overwrite the file system info structure
+	blkdevsim->write(sizeof(struct myfs_header), sizeof(sys_info), (const char *)&sys_info);
 
 	return file_entry;
 }
