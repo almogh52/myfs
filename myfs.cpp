@@ -176,7 +176,10 @@ void MyFs::get_file(const myfs_entry file_entry, char *file_data)
 		blkdevsim->read(block.next_block * BLOCK_SIZE, BLOCK_SIZE, (char *)&block);
 
 		// Copy the data from the block into the file data
-		memcpy(file_data + file_pointer, block.data, (file_entry.size - file_pointer) % BLOCK_DATA_SIZE);
+		memcpy(file_data + file_pointer, block.data, file_entry.size - file_pointer < BLOCK_DATA_SIZE ? file_entry.size - file_pointer : BLOCK_DATA_SIZE);
+
+		// Increase data pointer for the next data block
+		file_pointer += BLOCK_DATA_SIZE;
 	} while (block.next_block);
 }
 
@@ -491,6 +494,49 @@ void MyFs::write_file(std::string path, std::string file_name, std::string conte
 	update_file(&file, (char *)content.c_str(), content.size());
 }
 
+std::string MyFs::read_file(std::string path, std::string file_name)
+{
+	std::string content_str;
+	char *content = nullptr;
+	struct myfs_dir_entry file_entry;
+	struct myfs_entry dir, file;
+	dir_entries entries;
+
+	// Get the dir from the path
+	dir = get_dir(path);
+
+	// Get the entries of the folder
+	entries = get_dir_entries(dir);
+
+	// Try to find the file dir entry
+	file_entry = Utils::SearchFile(file_name, entries);
+
+	// If the file isn't found, throw error
+	if (file_entry.inode == 0)
+	{
+		throw MyFsException("Unable to find the file '" + file_name + "'!");
+	}
+
+	// Try to get the file entry
+	file = get_file_entry(file_entry.inode);
+	if (file.inode == 0)
+	{
+		throw MyFsException("An error occurred while searching the file's entry!");
+	}
+
+	// Allocate memory for file
+	content = new char[file.size];
+
+	// Get the file's content
+	get_file(file, content);
+
+	// Copy the content of the file to a string
+	content_str.assign(content, file.size);
+
+	// Return the string with the content
+	return content_str;
+}
+
 void MyFs::create_file(std::string path_str, bool directory)
 {
 	std::vector<std::string> tokens;
@@ -507,8 +553,13 @@ void MyFs::create_file(std::string path_str, bool directory)
 
 std::string MyFs::get_content(std::string path_str)
 {
-	throw MyFsException("not implemented");
-	return "";
+	std::vector<std::string> tokens;
+
+	tokens = Utils::Split(path_str, '/');
+
+	path_str = path_str.substr(0, path_str.size() - tokens.back().length());
+
+	return read_file(path_str, tokens.back());
 }
 
 void MyFs::set_content(std::string path_str, std::string content)

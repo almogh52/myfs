@@ -141,6 +141,7 @@ class MyFs
 	static const uint8_t CURR_VERSION = 0x03;
 	static const char *MYFS_MAGIC;
 
+	std::string read_file(std::string path, std::string file_name);
 	void deallocate_block_chain(uint32_t block_chain_head);
 	void write_file(std::string path, std::string file_name, std::string content);
 	void add_dir_entry(struct myfs_entry *dir, struct myfs_entry *file_entry, std::string file_name);
