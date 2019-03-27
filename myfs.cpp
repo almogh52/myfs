@@ -15,8 +15,6 @@ MyFs::MyFs(BlockDeviceSimulator *blkdevsim_) : blkdevsim(blkdevsim_), _current_d
 	struct myfs_header header;
 	blkdevsim->read(0, sizeof(header), (char *)&header);
 
-	format();
-
 	if (strncmp(header.magic, MYFS_MAGIC, sizeof(header.magic)) != 0 ||
 		(header.version != CURR_VERSION))
 	{
@@ -265,7 +263,7 @@ void MyFs::update_file(struct MyFs::myfs_entry *file_entry, char *data, uint32_t
 {
 	uint32_t data_pointer = size - (size % BLOCK_DATA_SIZE) + BLOCK_DATA_SIZE, block_index = 0, back_block_index = 0, deallocate_block_index = 0;
 	struct myfs_info sys_info = {0};
-	struct myfs_block block = {0};
+	struct myfs_block block = {{0}};
 
 	// Get the file system info struct
 	blkdevsim->read(sizeof(myfs_header), sizeof(sys_info), (char *)&sys_info);
@@ -467,7 +465,7 @@ void MyFs::init_dir(struct MyFs::myfs_entry *dir_entry, struct MyFs::myfs_entry 
 {
 	struct myfs_dir dir = {0};
 	struct myfs_dir_entry current_dir = {0}, prev_dir = {0};
-	struct myfs_block block = {0};
+	struct myfs_block block = {{0}};
 
 	// Set the folder to have 2 entries(current folder and prev folder)
 	dir.amount = 2;
@@ -539,8 +537,6 @@ void MyFs::write_file(std::string path, std::string file_name, std::string conte
 
 	// Get the dir from the path
 	dir = get_dir(path);
-
-	content = content + content + content + content + content + content + content + content + content + content + content + content + content + content;
 
 	// Get the entries of the folder
 	entries = get_dir_entries(dir);
