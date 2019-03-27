@@ -541,12 +541,16 @@ void MyFs::create_file(std::string path_str, bool directory)
 {
 	std::vector<std::string> tokens;
 
+	// If not a directory, create a file
 	if (!directory)
 	{
+		// Split the path into tokens
 		tokens = Utils::Split(path_str, '/');
 
+		// Get the path without the file name
 		path_str = path_str.substr(0, path_str.size() - tokens.back().length());
 
+		// Create the file
 		create_file(path_str, tokens.back());
 	}
 }
@@ -555,10 +559,13 @@ std::string MyFs::get_content(std::string path_str)
 {
 	std::vector<std::string> tokens;
 
+	// Split the path into tokens
 	tokens = Utils::Split(path_str, '/');
 
+	// Get the path without the file name
 	path_str = path_str.substr(0, path_str.size() - tokens.back().length());
 
+	// Read the file
 	return read_file(path_str, tokens.back());
 }
 
@@ -566,10 +573,13 @@ void MyFs::set_content(std::string path_str, std::string content)
 {
 	std::vector<std::string> tokens;
 
+	// Split the path into tokens
 	tokens = Utils::Split(path_str, '/');
 
+	// Get the path without the file name
 	path_str = path_str.substr(0, path_str.size() - tokens.back().length());
 
+	// Write the content into the file
 	write_file(path_str, tokens.back(), content);
 }
 
