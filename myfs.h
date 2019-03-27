@@ -136,13 +136,11 @@ class MyFs
 
 	BlockDeviceSimulator *blkdevsim;
 
-	struct myfs_entry *currentDirEntry;
-	struct myfs_entry *rootFolderEntry;
+	uint32_t _current_dir_inode;
 
 	static const uint8_t CURR_VERSION = 0x03;
 	static const char *MYFS_MAGIC;
 
-	void update_dirs_ptrs();
 	void add_dir_entry(struct myfs_entry *dir, struct myfs_entry *file_entry, std::string file_name);
 	void create_file(std::string path, std::string file_name);
 	void update_entry(struct myfs_entry *file_entry);

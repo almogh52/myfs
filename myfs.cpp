@@ -63,9 +63,8 @@ void MyFs::format()
 	// Set the root folder in the start of the drive
 	blkdevsim->write(INODE_TABLE_BLOCKS * BLOCK_SIZE, sizeof(rootFolder), (const char *)&rootFolder);
 
-	// Create structs for the current and root folder entries
-	this->currentDirEntry = new struct myfs_entry(rootFolderEntry);
-	this->rootFolderEntry = new struct myfs_entry(rootFolderEntry);
+	// Set the initial current dir as the root dir
+	_current_dir_inode = 1;
 }
 
 struct MyFs::myfs_entry MyFs::get_dir(const std::string &path_str)
@@ -80,7 +79,8 @@ struct MyFs::myfs_entry MyFs::get_dir(const std::string &path_str)
 	// If the first dir of the path is the root folder set the dir as the entry of the first folder
 	if (dirs[0].length() == 0)
 	{
-		dir = *rootFolderEntry;
+		// Get the first inode which is the root dir inode
+		dir = get_file_entry(1);
 
 		// Remove the first dir from the dirs list
 		dirs.erase(dirs.begin());
@@ -387,22 +387,6 @@ void MyFs::create_file(std::string path, std::string file_name)
 
 	// Add a dir entry for the file in the dir file
 	add_dir_entry(&dir, &file, file_name);
-
-	// Update current dir for changes
-	update_dirs_ptrs();
-}
-
-void MyFs::update_dirs_ptrs()
-{
-	uint32_t current_dir_inode = currentDirEntry->inode;
-
-	// Release current pointers
-	delete currentDirEntry;
-	delete rootFolderEntry;
-
-	// Re-create entries with data from disk
-	currentDirEntry = new struct myfs_entry(get_file_entry(current_dir_inode));
-	rootFolderEntry = new struct myfs_entry(get_file_entry(1));
 }
 
 void MyFs::create_file(std::string path_str, bool directory)
