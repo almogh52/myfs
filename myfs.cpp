@@ -257,7 +257,7 @@ void MyFs::update_entry(struct MyFs::myfs_entry *file_entry)
 
 void MyFs::update_file(struct MyFs::myfs_entry *file_entry, char *data, uint32_t size)
 {
-	uint32_t data_pointer = size - (size % BLOCK_DATA_SIZE) + BLOCK_DATA_SIZE, block_index = 0;
+	uint32_t data_pointer = size - (size % BLOCK_DATA_SIZE) + BLOCK_DATA_SIZE, block_index = 0, back_block_index = 0;
 	struct myfs_info sys_info = {0};
 	struct myfs_block block = {0};
 
@@ -289,26 +289,59 @@ void MyFs::update_file(struct MyFs::myfs_entry *file_entry, char *data, uint32_t
 	// If the file has blocks on memory and has changed, rewrite all the blocks
 	else if (file_entry->first_block != 0 && size != 0)
 	{
-		data_pointer = 0;
-		block_index = file_entry->first_block;
-
-		// While we didn't reach the end of our existing block chain
-		while (data_pointer < size && data_pointer < Utils::CalcAmountOfBlocksForFile(file_entry->size) * BLOCK_DATA_SIZE)
+		// Allocate blocks as much as the new file requires
+		for (int i = 0; i < Utils::CalcAmountOfBlocksForFile(size) - Utils::CalcAmountOfBlocksForFile(file_entry->size); i++)
 		{
-			// Get the next block of the file
-			blkdevsim->read(block_index * BLOCK_SIZE, BLOCK_SIZE, (char *)&block);
+			std::cout << "FIR: " << block.next_block << std::endl;
+
+			// Go to the next block
+			data_pointer -= BLOCK_DATA_SIZE;
+
+			// Set the next block's index
+			block.next_block = block_index;
 
 			// Copy the current block's data to the block's struct
-			memcpy(block.data, data + data_pointer, (size - data_pointer) % BLOCK_DATA_SIZE);
+			memcpy(block.data, data + data_pointer, size - data_pointer < BLOCK_DATA_SIZE ? size - data_pointer : BLOCK_DATA_SIZE);
 
-			// Overwrite the block
-			blkdevsim->write(block_index * BLOCK_SIZE, BLOCK_SIZE, (const char *)&block);
+			// Allocate the block and get it's position
+			block_index = allocate_block(&block, &sys_info);
+		}
+
+		// Save the back block index
+		back_block_index = block_index;
+
+		// Reset data pointer so we can start using the already allocated blocks
+		data_pointer = 0;
+
+		// Set the first block to be read
+		block_index = file_entry->first_block;
+
+		// Go through the allocated blocks of the file
+		for(int i = 0; i < Utils::CalcAmountOfBlocksForFile(file_entry->size); i++)
+		{
+			// Read the first block
+			blkdevsim->read(block_index * BLOCK_SIZE, sizeof(block), (char *)&block);
+
+			// Copy the current block's data to the block's struct
+			memcpy(block.data, data + data_pointer, size - data_pointer < BLOCK_DATA_SIZE ? size - data_pointer : BLOCK_DATA_SIZE);
+
+			std::cout << "FIR: " << block.data << std::endl;
+			std::cout << "SEC: " << block.next_block << std::endl << std::endl << std::endl;
+
+			// If we found the last block, set it's next block as the back block
+			if (block.next_block == 0)
+			{
+				block.next_block = back_block_index;
+			}
+
+			// Overwrite the current block
+			blkdevsim->write(block_index * BLOCK_SIZE, sizeof(block), (char *)&block);
+
+			// Move to the next block's data
+			data_pointer += BLOCK_DATA_SIZE;
 
 			// Move to the next block
 			block_index = block.next_block;
-
-			// Go to the next block
-			data_pointer += BLOCK_DATA_SIZE;
 		}
 	}
 
