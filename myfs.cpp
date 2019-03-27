@@ -10,7 +10,7 @@
 
 const char *MyFs::MYFS_MAGIC = "MYFS";
 
-MyFs::MyFs(BlockDeviceSimulator *blkdevsim_) : blkdevsim(blkdevsim_)
+MyFs::MyFs(BlockDeviceSimulator *blkdevsim_) : blkdevsim(blkdevsim_), _current_dir_inode(1)
 {
 	struct myfs_header header;
 	blkdevsim->read(0, sizeof(header), (char *)&header);
@@ -62,9 +62,6 @@ void MyFs::format()
 
 	// Set the root folder in the start of the drive
 	blkdevsim->write(INODE_TABLE_BLOCKS * BLOCK_SIZE, sizeof(rootFolder), (const char *)&rootFolder);
-
-	// Set the initial current dir as the root dir
-	_current_dir_inode = 1;
 }
 
 struct MyFs::myfs_entry MyFs::get_dir(const std::string &path_str)
