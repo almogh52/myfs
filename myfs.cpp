@@ -33,7 +33,6 @@ void MyFs::format()
 	struct myfs_info sys_info = {0};
 
 	struct myfs_entry rootFolderEntry = {0};
-	struct myfs_dir rootFolder = {0};
 
 	struct myfs_entry empty_entry = {0};
 
@@ -47,21 +46,17 @@ void MyFs::format()
 
 	// Set the sys info after the header
 	sys_info.inode_count = 1;
-	sys_info.block_bitmap = 0b111111111; // Set all 9 first blocks as taken
+	sys_info.block_bitmap = 0b11111111; // Set all 8 first blocks as taken
 	blkdevsim->write(sizeof(header), sizeof(sys_info), (const char *)&sys_info);
 
 	// Set the root folder as first entry in the first entry in the inode table
 	rootFolderEntry.inode = 1;
-	rootFolderEntry.first_block = 8;
-	rootFolderEntry.size = sizeof(rootFolder);
 	rootFolderEntry.is_dir = true;
+	init_dir(&rootFolderEntry, &rootFolderEntry, &sys_info);
 	blkdevsim->write(BLOCK_SIZE, sizeof(rootFolderEntry), (const char *)&rootFolderEntry);
 
 	// Set empty entry after the first entry for the next file to be created to be set there
 	blkdevsim->write(BLOCK_SIZE + sizeof(rootFolderEntry), sizeof(struct myfs_entry), (const char *)&empty_entry);
-
-	// Set the root folder in the start of the drive
-	blkdevsim->write(INODE_TABLE_BLOCKS * BLOCK_SIZE, sizeof(rootFolder), (const char *)&rootFolder);
 }
 
 struct MyFs::myfs_entry MyFs::get_dir(const std::string &path_str)
@@ -443,15 +438,11 @@ struct MyFs::myfs_entry MyFs::allocate_file(bool is_dir)
 	return file_entry;
 }
 
-void MyFs::init_dir(struct MyFs::myfs_entry *dir_entry, struct MyFs::myfs_entry *prev_dir_entry)
+void MyFs::init_dir(struct MyFs::myfs_entry *dir_entry, struct MyFs::myfs_entry *prev_dir_entry, struct MyFs::myfs_info *sys_info)
 {
 	struct myfs_dir dir = {0};
 	struct myfs_dir_entry current_dir = {0}, prev_dir = {0};
 	struct myfs_block block = {0};
-	struct myfs_info sys_info = {0};
-
-	// Get the file system info struct
-	blkdevsim->read(sizeof(struct myfs_header), sizeof(sys_info), (char *)&sys_info);
 
 	// Set the folder to have 2 entries(current folder and prev folder)
 	dir.amount = 2;
@@ -470,10 +461,8 @@ void MyFs::init_dir(struct MyFs::myfs_entry *dir_entry, struct MyFs::myfs_entry 
 	memcpy(block.data + sizeof(dir) + sizeof(current_dir), &prev_dir, sizeof(prev_dir));
 
 	// Allocate the block for the dir
-	dir_entry->first_block = allocate_block(&block, &sys_info);
-
-	// Overwrite the file system info structure
-	blkdevsim->write(sizeof(struct myfs_header), sizeof(sys_info), (const char *)&sys_info);
+	dir_entry->first_block = allocate_block(&block, sys_info);
+	dir_entry->size = sizeof(dir) + sizeof(current_dir) + sizeof(prev_dir);
 }
 
 void MyFs::create_file(std::string path, std::string file_name)
