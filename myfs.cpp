@@ -47,7 +47,6 @@ void MyFs::format()
 	// Set the sys info after the header
 	sys_info.inode_count = 1;
 	sys_info.block_bitmap = 0b11111111; // Set all 8 first blocks as taken
-	blkdevsim->write(sizeof(header), sizeof(sys_info), (const char *)&sys_info);
 
 	// Set the root folder as first entry in the first entry in the inode table
 	rootFolderEntry.inode = 1;
@@ -57,6 +56,9 @@ void MyFs::format()
 
 	// Set empty entry after the first entry for the next file to be created to be set there
 	blkdevsim->write(BLOCK_SIZE + sizeof(rootFolderEntry), sizeof(struct myfs_entry), (const char *)&empty_entry);
+
+	// Save the sys info
+	blkdevsim->write(sizeof(header), sizeof(sys_info), (const char *)&sys_info);
 }
 
 struct MyFs::myfs_entry MyFs::get_dir(const std::string &path_str)
