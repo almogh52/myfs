@@ -425,26 +425,40 @@ void MyFs::add_dir_entry(struct MyFs::myfs_entry *dir, struct MyFs::myfs_entry *
 	update_file(dir, new_dir_data, dir->size + sizeof(struct myfs_dir_entry));
 }
 
-struct MyFs::myfs_entry MyFs::allocate_file(bool is_dir)
+struct MyFs::myfs_entry MyFs::allocate_file(bool is_dir, struct MyFs::myfs_info *sys_info_ptr)
 {
 	struct myfs_entry file_entry = {0};
-	struct myfs_info sys_info = {0};
+	struct myfs_info *sys_info = sys_info_ptr;
 
-	// Get the file system info struct
-	blkdevsim->read(sizeof(struct myfs_header), sizeof(sys_info), (char *)&sys_info);
+	// If no sys info passed, get it
+	if (sys_info == nullptr)
+	{
+		// Allocate the struct
+		sys_info = new struct myfs_info();
+
+		// Get the file system info struct
+		blkdevsim->read(sizeof(struct myfs_header), sizeof(sys_info), (char *)sys_info);
+	}
 
 	// Increase the inode counter
-	sys_info.inode_count += 1;
+	sys_info->inode_count += 1;
 
 	// Set file's properties
-	file_entry.inode = sys_info.inode_count;
+	file_entry.inode = sys_info->inode_count;
 	file_entry.is_dir = is_dir;
 
 	// Add the entry to inode table
 	add_entry(&file_entry);
 
-	// Overwrite the file system info structure
-	blkdevsim->write(sizeof(struct myfs_header), sizeof(sys_info), (const char *)&sys_info);
+	// If no sys info was passed, write it to the disk
+	if (sys_info_ptr == nullptr)
+	{
+		// Overwrite the file system info structure
+		blkdevsim->write(sizeof(struct myfs_header), sizeof(sys_info), (const char *)sys_info);
+
+		// Release memory
+		delete sys_info;
+	}
 
 	return file_entry;
 }
@@ -476,6 +490,33 @@ void MyFs::init_dir(struct MyFs::myfs_entry *dir_entry, struct MyFs::myfs_entry 
 	dir_entry->size = sizeof(dir) + sizeof(current_dir) + sizeof(prev_dir);
 }
 
+void MyFs::create_dir(std::string path, std::string dir_name)
+{
+	struct myfs_entry parent_dir, dir;
+	struct myfs_info sys_info = {0};
+
+	// Get the file system info struct
+	blkdevsim->read(sizeof(struct myfs_header), sizeof(sys_info), (char *)&sys_info);
+
+	// Get the dir from the path
+	parent_dir = get_dir(path);
+
+	// Allocate the dir
+	dir = allocate_file(true, &sys_info);
+
+	// Initialize the directory
+	init_dir(&dir, &parent_dir, &sys_info);
+
+	// Update the dir's entry
+	update_entry(&dir);
+
+	// Add a dir entry for the dir in the parent dir file
+	add_dir_entry(&parent_dir, &dir, dir_name);
+
+	// Overwrite the file system info structure
+	blkdevsim->write(sizeof(struct myfs_header), sizeof(sys_info), (const char *)&sys_info);
+}
+
 void MyFs::create_file(std::string path, std::string file_name)
 {
 	struct myfs_entry dir, file;
@@ -484,7 +525,7 @@ void MyFs::create_file(std::string path, std::string file_name)
 	dir = get_dir(path);
 
 	// Allocate the file
-	file = allocate_file(false);
+	file = allocate_file(false, nullptr);
 
 	// Add a dir entry for the file in the dir file
 	add_dir_entry(&dir, &file, file_name);
@@ -571,26 +612,34 @@ void MyFs::create_file(std::string path_str, bool directory)
 {
 	std::vector<std::string> tokens;
 
-	// If not a directory, create a file
-	if (!directory)
+	// If the path has dirs in it
+	if (path_str.find('/') != std::string::npos)
 	{
-		// If the path has dirs in it
-		if (path_str.find('/') != std::string::npos)
+		// Split the path into tokens
+		tokens = Utils::Split(path_str, '/');
+
+		// Get the path without the file name
+		path_str = path_str.substr(0, path_str.size() - tokens.back().length());
+
+		if (!directory)
 		{
-			// Split the path into tokens
-			tokens = Utils::Split(path_str, '/');
-
-			// Get the path without the file name
-			path_str = path_str.substr(0, path_str.size() - tokens.back().length());
-
 			// Create the file
 			create_file(path_str, tokens.back());
-		}
-		else
+		} else {
+			// Create the dir
+			create_dir(path_str, tokens.back());
+		}		
+	}
+	else
+	{
+		if (!directory)
 		{
 			// Create the file
 			create_file("./", path_str);
-		}
+		} else {
+			// Create the dir
+			create_dir("./", path_str);
+		}	
 	}
 }
 
