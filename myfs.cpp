@@ -443,6 +443,39 @@ struct MyFs::myfs_entry MyFs::allocate_file(bool is_dir)
 	return file_entry;
 }
 
+void MyFs::init_dir(struct MyFs::myfs_entry *dir_entry, struct MyFs::myfs_entry *prev_dir_entry)
+{
+	struct myfs_dir dir = {0};
+	struct myfs_dir_entry current_dir = {0}, prev_dir = {0};
+	struct myfs_block block = {0};
+	struct myfs_info sys_info = {0};
+
+	// Get the file system info struct
+	blkdevsim->read(sizeof(struct myfs_header), sizeof(sys_info), (char *)&sys_info);
+
+	// Set the folder to have 2 entries(current folder and prev folder)
+	dir.amount = 2;
+
+	// Set current dir entry properties
+	current_dir.inode = dir_entry->inode;
+	strcpy(current_dir.name, ".");
+
+	// Set prev dir entry properties
+	prev_dir.inode = prev_dir_entry->inode;
+	strcpy(prev_dir.name, "..");
+
+	// Copy all dir data
+	memcpy(block.data, &dir, sizeof(dir));
+	memcpy(block.data + sizeof(dir), &current_dir, sizeof(current_dir));
+	memcpy(block.data + sizeof(dir) + sizeof(current_dir), &prev_dir, sizeof(prev_dir));
+
+	// Allocate the block for the dir
+	dir_entry->first_block = allocate_block(&block, &sys_info);
+
+	// Overwrite the file system info structure
+	blkdevsim->write(sizeof(struct myfs_header), sizeof(sys_info), (const char *)&sys_info);
+}
+
 void MyFs::create_file(std::string path, std::string file_name)
 {
 	struct myfs_entry dir, file;
@@ -552,7 +585,9 @@ void MyFs::create_file(std::string path_str, bool directory)
 
 			// Create the file
 			create_file(path_str, tokens.back());
-		} else {
+		}
+		else
+		{
 			// Create the file
 			create_file("./", path_str);
 		}
@@ -574,7 +609,9 @@ std::string MyFs::get_content(std::string path_str)
 
 		// Read the content of the file
 		return read_file(path_str, tokens.back());
-	} else {
+	}
+	else
+	{
 		// Read the content of the file
 		return read_file("./", path_str);
 	}
@@ -595,7 +632,9 @@ void MyFs::set_content(std::string path_str, std::string content)
 
 		// Write the content into the file
 		write_file(path_str, tokens.back(), content);
-	} else {
+	}
+	else
+	{
 		// Write the content into the file
 		write_file("./", path_str, content);
 	}
