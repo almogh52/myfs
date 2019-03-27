@@ -642,7 +642,36 @@ void MyFs::set_content(std::string path_str, std::string content)
 
 MyFs::dir_list MyFs::list_dir(std::string path_str)
 {
+	struct myfs_entry dir;
+	struct myfs_entry file_entry;
+	struct dir_list_entry dir_entry;
+	dir_entries entries;
 	dir_list ans;
-	throw MyFsException("not implemented");
+
+	// Get the dir from the path
+	dir = get_dir(path_str);
+
+	// Get the entries of the folder
+	entries = get_dir_entries(dir);
+
+	// For each entry create a dir list item
+	for (auto& entry : entries)
+	{
+		// Get the file entry of the dir entry
+		file_entry = get_file_entry(entry.inode);
+		if (file_entry.inode == 0)
+		{
+			throw MyFsException("Unable to get the file's inode entry!");
+		}
+
+		// Set dir entry properties
+		dir_entry.name = std::string(entry.name);
+		dir_entry.is_dir = file_entry.is_dir;
+		dir_entry.file_size = file_entry.size;
+
+		// Add dir entry
+		ans.push_back(dir_entry);
+	}
+
 	return ans;
 }
