@@ -8,7 +8,7 @@
 #include "blkdev.h"
 
 #define BLOCK_SIZE 4096
-#define BLOCK_DATA_SIZE BLOCK_SIZE - sizeof(uint32_t)
+#define BLOCK_DATA_SIZE (BLOCK_SIZE - sizeof(uint32_t))
 
 #define INODE_TABLE_BLOCKS 7
 
@@ -141,6 +141,7 @@ class MyFs
 	static const uint8_t CURR_VERSION = 0x03;
 	static const char *MYFS_MAGIC;
 
+	void write_file(std::string path, std::string file_name, std::string content);
 	void add_dir_entry(struct myfs_entry *dir, struct myfs_entry *file_entry, std::string file_name);
 	void create_file(std::string path, std::string file_name);
 	void update_entry(struct myfs_entry *file_entry);

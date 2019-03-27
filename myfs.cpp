@@ -257,7 +257,7 @@ void MyFs::update_entry(struct MyFs::myfs_entry *file_entry)
 
 void MyFs::update_file(struct MyFs::myfs_entry *file_entry, char *data, uint32_t size)
 {
-	uint32_t data_pointer = size - size % BLOCK_DATA_SIZE, block_index = 0;
+	uint32_t data_pointer = size - (size % BLOCK_DATA_SIZE) + BLOCK_DATA_SIZE, block_index = 0;
 	struct myfs_info sys_info = {0};
 	struct myfs_block block = {0};
 
@@ -268,20 +268,20 @@ void MyFs::update_file(struct MyFs::myfs_entry *file_entry, char *data, uint32_t
 	if (file_entry->first_block == 0 && size != 0)
 	{
 		// While we didn't reach the end of the data (backwards addition of the file)
-		while (data_pointer)
+		do
 		{
+			// Go to the next block
+			data_pointer -= BLOCK_DATA_SIZE;
+
 			// Set the next block's index
 			block.next_block = block_index;
 
 			// Copy the current block's data to the block's struct
-			memcpy(block.data, data + data_pointer, (size - data_pointer) % BLOCK_DATA_SIZE);
+			memcpy(block.data, data + data_pointer, size - data_pointer < BLOCK_DATA_SIZE ? size - data_pointer : BLOCK_DATA_SIZE);
 
 			// Allocate the block and get it's position
 			block_index = allocate_block(&block, &sys_info);
-
-			// Go to the next block
-			data_pointer -= BLOCK_DATA_SIZE;
-		}
+		} while (data_pointer);
 
 		// Set the first block as we received from the loop
 		file_entry->first_block = block_index;
@@ -331,7 +331,7 @@ void MyFs::add_dir_entry(struct MyFs::myfs_entry *dir, struct MyFs::myfs_entry *
 	// If a file with the file name already exists throw error
 	if (Utils::SearchFile(file_name, get_dir_entries(*dir)).inode != 0)
 	{
-		throw MyFsException("File with the name " + file_name + " already exists!");
+		throw MyFsException("File with the name '" + file_name + "' already exists!");
 	}
 
 	// Set the dir entry properties
@@ -389,6 +389,40 @@ void MyFs::create_file(std::string path, std::string file_name)
 	add_dir_entry(&dir, &file, file_name);
 }
 
+void MyFs::write_file(std::string path, std::string file_name, std::string content)
+{
+	struct myfs_dir_entry file_entry;
+	struct myfs_entry dir, file;
+	dir_entries entries;
+
+	// Get the dir from the path
+	dir = get_dir(path);
+
+	content = content + content + content + content + content + content + content + content + content + content + content + content + content + content;
+
+	// Get the entries of the folder
+	entries = get_dir_entries(dir);
+
+	// Try to find the file dir entry
+	file_entry = Utils::SearchFile(file_name, entries);
+
+	// If the file isn't found, throw error
+	if (file_entry.inode == 0)
+	{
+		throw MyFsException("Unable to find the file '" + file_name + "'!");
+	}
+
+	// Try to get the file entry
+	file = get_file_entry(file_entry.inode);
+	if (file.inode == 0)
+	{
+		throw MyFsException("An error occurred while searching the file's entry!");
+	}
+
+	// Update the file with it's new content
+	update_file(&file, (char *)content.c_str(), content.size());
+}
+
 void MyFs::create_file(std::string path_str, bool directory)
 {
 	std::vector<std::string> tokens;
@@ -411,7 +445,13 @@ std::string MyFs::get_content(std::string path_str)
 
 void MyFs::set_content(std::string path_str, std::string content)
 {
-	throw MyFsException("not implemented");
+	std::vector<std::string> tokens;
+
+	tokens = Utils::Split(path_str, '/');
+
+	path_str = path_str.substr(0, path_str.size() - tokens.back().length());
+
+	write_file(path_str, tokens.back(), content);
 }
 
 MyFs::dir_list MyFs::list_dir(std::string path_str)
