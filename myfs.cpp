@@ -257,7 +257,7 @@ void MyFs::update_entry(struct MyFs::myfs_entry *file_entry)
 
 void MyFs::update_file(struct MyFs::myfs_entry *file_entry, char *data, uint32_t size)
 {
-	uint32_t data_pointer = size - (size % BLOCK_DATA_SIZE) + BLOCK_DATA_SIZE, block_index = 0, back_block_index = 0;
+	uint32_t data_pointer = size - (size % BLOCK_DATA_SIZE) + BLOCK_DATA_SIZE, block_index = 0, back_block_index = 0, deallocate_block_index = 0;
 	struct myfs_info sys_info = {0};
 	struct myfs_block block = {0};
 
@@ -292,8 +292,6 @@ void MyFs::update_file(struct MyFs::myfs_entry *file_entry, char *data, uint32_t
 		// Allocate blocks as much as the new file requires
 		for (int i = 0; i < Utils::CalcAmountOfBlocksForFile(size) - Utils::CalcAmountOfBlocksForFile(file_entry->size); i++)
 		{
-			std::cout << "FIR: " << block.next_block << std::endl;
-
 			// Go to the next block
 			data_pointer -= BLOCK_DATA_SIZE;
 
@@ -317,21 +315,26 @@ void MyFs::update_file(struct MyFs::myfs_entry *file_entry, char *data, uint32_t
 		block_index = file_entry->first_block;
 
 		// Go through the allocated blocks of the file
-		for(int i = 0; i < Utils::CalcAmountOfBlocksForFile(file_entry->size); i++)
+		for (int i = 0; i < std::min(Utils::CalcAmountOfBlocksForFile(file_entry->size), Utils::CalcAmountOfBlocksForFile(size)); i++)
 		{
-			// Read the first block
+			// Read the current block
 			blkdevsim->read(block_index * BLOCK_SIZE, sizeof(block), (char *)&block);
 
 			// Copy the current block's data to the block's struct
 			memcpy(block.data, data + data_pointer, size - data_pointer < BLOCK_DATA_SIZE ? size - data_pointer : BLOCK_DATA_SIZE);
 
-			std::cout << "FIR: " << block.data << std::endl;
-			std::cout << "SEC: " << block.next_block << std::endl << std::endl << std::endl;
-
 			// If we found the last block, set it's next block as the back block
 			if (block.next_block == 0)
 			{
 				block.next_block = back_block_index;
+			}
+			// If we reached the last block, set it as last block and save next block
+			else if (data_pointer + BLOCK_DATA_SIZE >= size)
+			{
+				// Save next block
+				deallocate_block_index = block.next_block;
+
+				block.next_block = 0;
 			}
 
 			// Overwrite the current block
@@ -340,8 +343,14 @@ void MyFs::update_file(struct MyFs::myfs_entry *file_entry, char *data, uint32_t
 			// Move to the next block's data
 			data_pointer += BLOCK_DATA_SIZE;
 
-			// Move to the next block
+			// Set the next block
 			block_index = block.next_block;
+		}
+
+		// If there are unused allocated blocks, de-allocate them
+		if (deallocate_block_index != 0)
+		{
+			deallocate_block_chain(deallocate_block_index);
 		}
 	}
 
@@ -350,6 +359,32 @@ void MyFs::update_file(struct MyFs::myfs_entry *file_entry, char *data, uint32_t
 
 	// Update the file entry in the inode entries table
 	update_entry(file_entry);
+
+	// Overwrite the file system info structure
+	blkdevsim->write(sizeof(struct myfs_header), sizeof(sys_info), (const char *)&sys_info);
+}
+
+void MyFs::deallocate_block_chain(uint32_t block_chain_head)
+{
+	uint32_t block_index = block_chain_head;
+	struct myfs_info sys_info;
+	struct myfs_block block;
+
+	// Get the file system info struct
+	blkdevsim->read(sizeof(struct myfs_header), sizeof(sys_info), (char *)&sys_info);
+
+	// While we didn't reach the end of the block chain
+	while (block_index != 0)
+	{
+		// Read the current block
+		blkdevsim->read(block_index * BLOCK_SIZE, sizeof(block), (char *)&block);
+
+		// De-allocate the block
+		sys_info.block_bitmap.reset(block_index);
+
+		// Move to the next block
+		block_index = block.next_block;
+	}
 
 	// Overwrite the file system info structure
 	blkdevsim->write(sizeof(struct myfs_header), sizeof(sys_info), (const char *)&sys_info);
@@ -390,7 +425,7 @@ struct MyFs::myfs_entry MyFs::allocate_file(bool is_dir)
 	struct myfs_info sys_info = {0};
 
 	// Get the file system info struct
-	blkdevsim->read(sizeof(myfs_header), sizeof(sys_info), (char *)&sys_info);
+	blkdevsim->read(sizeof(struct myfs_header), sizeof(sys_info), (char *)&sys_info);
 
 	// Increase the inode counter
 	sys_info.inode_count += 1;
