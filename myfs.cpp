@@ -77,6 +77,15 @@ struct MyFs::myfs_entry MyFs::get_dir(const std::string &path_str)
 		// Remove the first dir from the dirs list
 		dirs.erase(dirs.begin());
 	}
+	// Set initial dir as the current dir
+	else {
+		// Get the entry of the current folder
+		dir = get_file_entry(_current_dir_inode);
+		if (dir.inode == 0)
+		{
+			throw MyFsException("An error occurred while searching the dir's entry!");
+		}
+	}
 
 	// Go through the dir names in the dirs vector
 	for (std::string &dir_name : dirs)
