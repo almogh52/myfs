@@ -544,14 +544,21 @@ void MyFs::create_file(std::string path_str, bool directory)
 	// If not a directory, create a file
 	if (!directory)
 	{
-		// Split the path into tokens
-		tokens = Utils::Split(path_str, '/');
+		// If the path has dirs in it
+		if (path_str.find('/') != std::string::npos)
+		{
+			// Split the path into tokens
+			tokens = Utils::Split(path_str, '/');
 
-		// Get the path without the file name
-		path_str = path_str.substr(0, path_str.size() - tokens.back().length());
+			// Get the path without the file name
+			path_str = path_str.substr(0, path_str.size() - tokens.back().length());
 
-		// Create the file
-		create_file(path_str, tokens.back());
+			// Create the file
+			create_file(path_str, tokens.back());
+		} else {
+			// Create the file
+			create_file("./", path_str);
+		}
 	}
 }
 
@@ -559,28 +566,42 @@ std::string MyFs::get_content(std::string path_str)
 {
 	std::vector<std::string> tokens;
 
-	// Split the path into tokens
-	tokens = Utils::Split(path_str, '/');
+	// If the path has dirs in it
+	if (path_str.find('/') != std::string::npos)
+	{
+		// Split the path into tokens
+		tokens = Utils::Split(path_str, '/');
 
-	// Get the path without the file name
-	path_str = path_str.substr(0, path_str.size() - tokens.back().length());
+		// Get the path without the file name
+		path_str = path_str.substr(0, path_str.size() - tokens.back().length());
 
-	// Read the file
-	return read_file(path_str, tokens.back());
+		// Read the content of the file
+		return read_file(path_str, tokens.back());
+	} else {
+		// Read the content of the file
+		return read_file("./", path_str);
+	}
 }
 
 void MyFs::set_content(std::string path_str, std::string content)
 {
 	std::vector<std::string> tokens;
 
-	// Split the path into tokens
-	tokens = Utils::Split(path_str, '/');
+	// If the path has dirs in it
+	if (path_str.find('/') != std::string::npos)
+	{
+		// Split the path into tokens
+		tokens = Utils::Split(path_str, '/');
 
-	// Get the path without the file name
-	path_str = path_str.substr(0, path_str.size() - tokens.back().length());
+		// Get the path without the file name
+		path_str = path_str.substr(0, path_str.size() - tokens.back().length());
 
-	// Write the content into the file
-	write_file(path_str, tokens.back(), content);
+		// Write the content into the file
+		write_file(path_str, tokens.back(), content);
+	} else {
+		// Write the content into the file
+		write_file("./", path_str, content);
+	}
 }
 
 MyFs::dir_list MyFs::list_dir(std::string path_str)
