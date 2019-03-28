@@ -107,6 +107,8 @@ class MyFs
 	 */
 	dir_list list_dir(std::string path_str);
 
+	std::string change_directory(std::string path);
+
   private:
 	/**
 	 * This struct represents the first bytes of a myfs filesystem.
@@ -141,6 +143,7 @@ class MyFs
 	static const uint8_t CURR_VERSION = 0x03;
 	static const char *MYFS_MAGIC;
 
+	std::string change_directory(std::string path, std::string dir_name);
 	void create_dir(std::string path, std::string dir_name);
 	void init_dir(struct myfs_entry *dir_entry, struct myfs_entry *prev_dir_entry, struct myfs_info *sys_info);
 	std::string read_file(std::string path, std::string file_name);

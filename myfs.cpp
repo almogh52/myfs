@@ -139,6 +139,34 @@ MyFs::dir_entries MyFs::get_dir_entries(MyFs::myfs_entry dir_entry)
 	return entries_vector;
 }
 
+std::string MyFs::change_directory(std::string path, std::string dir_name)
+{
+	struct myfs_entry parent_dir;
+	struct myfs_dir_entry dir_entry;
+	dir_entries entries;
+
+	std::cout << path << std::endl;
+	std::cout << dir_name << std::endl;
+
+	// Get the parent dir entry
+	parent_dir = get_dir(path);
+
+	// Get the parent dir's entries
+	entries = get_dir_entries(parent_dir);
+
+	// Get the entry of the dir in the dir parent
+	dir_entry = Utils::SearchFile(dir_name, entries);
+	if (dir_entry.inode == 0)
+	{
+		throw MyFsException("Unable to find the dir '" + dir_name + "'!");
+	}
+
+	// Set it as the new current folder
+	_current_dir_inode = dir_entry.inode;
+
+	return std::string(dir_entry.name);
+}
+
 struct MyFs::myfs_entry MyFs::get_file_entry(const uint32_t inode)
 {
 	uint32_t entry_address = BLOCK_SIZE;
@@ -682,6 +710,29 @@ void MyFs::set_content(std::string path_str, std::string content)
 	{
 		// Write the content into the file
 		write_file("./", path_str, content);
+	}
+}
+
+std::string MyFs::change_directory(std::string path_str)
+{
+	std::vector<std::string> tokens;
+
+	// If the path has dirs in it
+	if (path_str.find('/') != std::string::npos)
+	{
+		// Split the path into tokens
+		tokens = Utils::Split(path_str, '/');
+
+		// Get the path without the file name
+		path_str = path_str.substr(0, path_str.size() - tokens.back().length());
+
+		// Change directory
+		return change_directory(path_str, tokens.back());
+	}
+	else
+	{
+		// Change directory
+		return change_directory("./", path_str);
 	}
 }
 
