@@ -36,9 +36,15 @@ std::vector<std::string> split_cmd(std::string cmd)
 static void recursive_print(MyFs &myfs, std::string path, std::string prefix = "")
 {
 	MyFs::dir_list dlist = myfs.list_dir(path);
+
 	for (size_t i = 0; i < dlist.size(); i++)
 	{
 		MyFs::dir_list_entry &curr_entry = dlist[i];
+
+		if (curr_entry.name == "." || curr_entry.name == "..")
+		{
+			continue;
+		}
 
 		std::string entry_prefix = prefix;
 		if (i == dlist.size() - 1)
@@ -56,7 +62,7 @@ static void recursive_print(MyFs &myfs, std::string path, std::string prefix = "
 				dir_prefix += "    ";
 			else
 				dir_prefix += "│   ";
-			recursive_print(myfs, path + "/" + curr_entry.name, dir_prefix);
+			recursive_print(myfs, path + curr_entry.name + "/", dir_prefix);
 		}
 	}
 }
@@ -139,7 +145,7 @@ int main(int argc, char **argv)
 			}
 			else if (cmd[0] == TREE_CMD)
 			{
-				recursive_print(myfs, "");
+				recursive_print(myfs, "/");
 			}
 			else if (cmd[0] == EDIT_CMD)
 			{
