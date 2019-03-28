@@ -635,6 +635,12 @@ void MyFs::write_file(std::string path, std::string file_name, std::string conte
 		throw MyFsException("An error occurred while searching the file's entry!");
 	}
 
+	// If the file is a dir, throw error
+	if (file.is_dir)
+	{
+		throw MyFsException("Unable to find the file '" + file_name + "'!");
+	}
+
 	// Update the file with it's new content
 	update_file(&file, (char *)content.c_str(), content.size());
 }
@@ -667,6 +673,12 @@ std::string MyFs::read_file(std::string path, std::string file_name)
 	if (file.inode == 0)
 	{
 		throw MyFsException("An error occurred while searching the file's entry!");
+	}
+
+	// If the file is a dir, throw error
+	if (file.is_dir)
+	{
+		throw MyFsException("Unable to find the file '" + file_name + "'!");
 	}
 
 	// Allocate memory for file
