@@ -145,6 +145,13 @@ std::string MyFs::change_directory(std::string path, std::string dir_name)
 	struct myfs_dir_entry dir_entry;
 	dir_entries entries;
 
+	// If the user requested the root dir
+	if (path == "/" && dir_name.length() == 0)
+	{
+		_current_dir_inode = 1;
+		return "/";
+	}
+
 	// Get the parent dir entry
 	parent_dir = get_dir(path);
 
