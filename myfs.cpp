@@ -141,12 +141,9 @@ MyFs::dir_entries MyFs::get_dir_entries(MyFs::myfs_entry dir_entry)
 
 std::string MyFs::change_directory(std::string path, std::string dir_name)
 {
-	struct myfs_entry parent_dir;
+	struct myfs_entry parent_dir, dir;
 	struct myfs_dir_entry dir_entry;
 	dir_entries entries;
-
-	std::cout << path << std::endl;
-	std::cout << dir_name << std::endl;
 
 	// Get the parent dir entry
 	parent_dir = get_dir(path);
@@ -161,8 +158,61 @@ std::string MyFs::change_directory(std::string path, std::string dir_name)
 		throw MyFsException("Unable to find the dir '" + dir_name + "'!");
 	}
 
+	// Try to get the dir inode entry
+	dir = get_file_entry(dir_entry.inode);
+	if (dir.inode == 0)
+	{
+		throw MyFsException("An error occurred while searching the file's entry!");
+	}
+	// If the file isn't a dir, throw error 
+	else if (!dir.is_dir)
+	{
+		throw MyFsException("Unable to find the dir '" + dir_name + "'!");
+	}
+
 	// Set it as the new current folder
-	_current_dir_inode = dir_entry.inode;
+	_current_dir_inode = dir.inode;
+
+	// If the dir is the root dir
+	if (dir.inode == 1)
+	{
+		return "/";
+	}
+	// If the requested dir is the current dir, get it's name
+	else if (dir_name == ".")
+	{
+		// Get the parent dir of the current dir
+		parent_dir = get_file_entry(Utils::SearchFile(std::string(".."), entries).inode);
+
+		// Get the parent dir's entries
+		entries = get_dir_entries(parent_dir);
+
+		// Get the entry of the dir in the dir parent
+		dir_entry = Utils::SearchFile(dir.inode, entries);
+		if (dir_entry.inode == 0)
+		{
+			throw MyFsException("Unable to find the dir '" + dir_name + "'!");
+		}
+	}
+	// If the requested dir is the previous dir
+	else if (dir_name == "..")
+	{
+		// Get the previous dir's entries
+		entries = get_dir_entries(dir);
+
+		// Get the parent dir of the previous dir
+		parent_dir = get_file_entry(Utils::SearchFile(std::string(".."), entries).inode);
+
+		// Get the parent dir's entries
+		entries = get_dir_entries(parent_dir);
+
+		// Get the entry of the dir in the dir parent
+		dir_entry = Utils::SearchFile(dir.inode, entries);
+		if (dir_entry.inode == 0)
+		{
+			throw MyFsException("Unable to find the dir '" + dir_name + "'!");
+		}
+	}
 
 	return std::string(dir_entry.name);
 }
